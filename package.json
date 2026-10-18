@@ -1,0 +1,69 @@
+{
+  "name": "kindle-notes",
+  "version": "0.1.0",
+  "description": "Copy your Kindle highlights, notes, and bookmarks from your Amazon account to a local database. Read them in a local web page or search them from Claude through MCP.",
+  "keywords": [
+    "kindle",
+    "highlights",
+    "notes",
+    "bookmarks",
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "sqlite",
+    "reading"
+  ],
+  "homepage": "https://github.com/0xpili/kindle-notes#readme",
+  "bugs": {
+    "url": "https://github.com/0xpili/kindle-notes/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/0xpili/kindle-notes.git"
+  },
+  "license": "MIT",
+  "author": "pili (https://github.com/0xpili)",
+  "type": "module",
+  "bin": {
+    "kindle-notes": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.map",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.json && cp -R src/web/public dist/web/ && chmod +x dist/cli.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "kn": "node dist/cli.js",
+    "prepublishOnly": "pnpm typecheck && pnpm test && pnpm build"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "better-sqlite3": "^12.11.1",
+    "cheerio": "^1.2.0",
+    "playwright": "^1.64.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "^26.6.5",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "better-sqlite3"
+    ]
+  }
+}

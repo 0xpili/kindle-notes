@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kindle Notes</title>
+  <link rel="stylesheet" href="/app.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#">Kindle Notes</a>
+    <form class="search" id="search-form" role="search">
+      <input id="search" type="search" placeholder="Search highlights and notes…" autocomplete="off" aria-label="Search highlights and notes">
+    </form>
+    <button class="btn" id="random-btn" type="button" title="Show a random highlight">Random</button>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar" aria-label="Books">
+      <input id="book-filter" class="book-filter" type="search" placeholder="Filter books" aria-label="Filter books">
+      <nav>
+        <a class="nav-item" id="nav-recent" href="#recent">Recent</a>
+      </nav>
+      <ul id="book-list" class="book-list"></ul>
+    </aside>
+
+    <main id="main" class="main" tabindex="-1">
+      <div id="random-card" class="random-card" hidden></div>
+      <div id="view"></div>
+    </main>
+  </div>
+
+  <footer class="status" id="status"></footer>
+</body>
+</html>
