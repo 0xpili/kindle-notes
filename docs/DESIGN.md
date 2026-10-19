@@ -170,3 +170,7 @@ The tool loads Playwright only for `login` and `sync`. Thus the web page and the
 - You can use the tool only with amazon.com.
 - The web page gets the cover images from the Amazon image server. These are the only external requests of the web page.
 - The tool opens each book in the web reader. Amazon then changes the "last annotated" date of the book.
+- The notebook asks for the password again when the last login is more than 1 hour old.
+  The sign-in URL contains `max_auth_age=3600`. The cookies of the session stay valid for 1 year.
+  The web reader and the library do not ask for the password again.
+  In a terminal, the sync opens a Chrome window for the login and then continues.

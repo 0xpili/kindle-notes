@@ -1,12 +1,13 @@
 import Database from 'better-sqlite3';
 import fs from 'node:fs';
 import path from 'node:path';
+import { cliCommand } from '../config.js';
 
 export type DB = Database.Database;
 
 export class NoDatabaseError extends Error {
   constructor(file: string) {
-    super(`There is no data in ${file}. Run \`kindle-notes login\`, then run \`kindle-notes sync\`.`);
+    super(`There is no data in ${file}. Run \`${cliCommand()} sync\`.`);
     this.name = 'NoDatabaseError';
   }
 }

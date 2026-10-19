@@ -3,11 +3,13 @@
 // UI and MCP server never load it.
 import fs from 'node:fs';
 import type { BrowserContext, Page } from 'playwright';
-import { AMAZON_READ_URL, paths } from '../config.js';
+import { AMAZON_READ_URL, cliCommand, paths } from '../config.js';
 
 export class SessionExpiredError extends Error {
   constructor() {
-    super('The Amazon session expired, or you did not log in. Run `kindle-notes login`.');
+    super(
+      `Amazon asks for your password again. Amazon does this when your last login is more than 1 hour old. Run \`${cliCommand()} login\`, or run \`${cliCommand()} sync\` in a terminal.`,
+    );
     this.name = 'SessionExpiredError';
   }
 }
@@ -56,7 +58,8 @@ export async function interactiveLogin(log: (msg: string) => void, timeoutMs = 1
   try {
     const page = await firstPage(ctx);
     await page.goto(`${AMAZON_READ_URL}/notebook`);
-    log('A Chrome window opened. Log in to Amazon in that window. This tool does not see your password.');
+    log('A Chrome window opened. Log in to Amazon in that window. Usually Amazon asks only for your password.');
+    log('This tool does not see your password. When the login is complete, the window closes.');
     const deadline = Date.now() + timeoutMs;
     for (;;) {
       if (page.isClosed()) throw new Error('The login window closed before the login was complete.');
@@ -64,7 +67,7 @@ export async function interactiveLogin(log: (msg: string) => void, timeoutMs = 1
         .evaluate(() => location.pathname.startsWith('/notebook') && !!document.querySelector('#kp-notebook-library'))
         .catch(() => false);
       if (ready) return;
-      if (Date.now() > deadline) throw new Error('The login did not occur in the time limit. Run `kindle-notes login` again.');
+      if (Date.now() > deadline) throw new Error(`The login did not occur in the time limit. Run \`${cliCommand()} login\` again.`);
       await new Promise((r) => setTimeout(r, 1500));
     }
   } finally {

@@ -57,8 +57,13 @@ To get new notes from Amazon, run `kindle-notes sync` again.
 You can do the sync many times. The sync adds new items and changes the items that changed on Amazon.
 The sync does not make duplicate items.
 
-If your Amazon session expires, the sync stops with exit code 2.
-Run `kindle-notes login` again.
+Amazon asks for your password again when your last login is more than 1 hour old.
+If you run the sync in a terminal, the sync opens Chrome.
+Type your password in the Chrome window. The sync then continues.
+
+If the sync runs without a terminal, the sync stops with exit code 2.
+A scheduled job is an example of a sync without a terminal.
+Run `kindle-notes login` or `kindle-notes sync` in a terminal, then the next scheduled sync will work for 1 hour.
 
 ## Commands
 
@@ -68,6 +73,7 @@ Run `kindle-notes login` again.
 | `kindle-notes sync` | Copies all highlights, notes, and bookmarks to the database. |
 | `kindle-notes sync --no-bookmarks` | Copies only highlights and notes. This option is faster. It does not get bookmarks or dates. |
 | `kindle-notes sync --book <ASIN>` | Copies the data of one book. |
+| `kindle-notes sync --no-login` | Does not open Chrome if Amazon asks for your password. The sync stops with exit code 2. |
 | `kindle-notes ui [--port 4477]` | Starts the web page at http://127.0.0.1:4477. |
 | `kindle-notes mcp` | Starts the MCP server (stdio). |
 | `kindle-notes status` | Shows the quantity of items and the result of the last sync. |

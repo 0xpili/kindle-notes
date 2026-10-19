@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 import { parseArgs } from 'node:util';
-import { DEFAULT_UI_PORT, paths } from './config.js';
+import { DEFAULT_UI_PORT, cliCommand, paths } from './config.js';
 
-const HELP = `kindle-notes: Copies your Kindle highlights, notes, and bookmarks to your computer.
+const HELP = () => `kindle-notes: Copies your Kindle highlights, notes, and bookmarks to your computer.
 
 Commands:
-  kindle-notes login                 Opens Chrome. Log in to Amazon. Do this again when the session expires.
+  kindle-notes login                 Opens Chrome. Log in to Amazon.
   kindle-notes sync [options]        Copies all data from read.amazon.com to the local database.
+                                     If Amazon asks for your password, the sync opens Chrome for the login.
       --no-bookmarks                 Does not open the web reader. This is faster, but you get no bookmarks or dates.
       --book <ASIN>                  Copies the data of one book only.
   kindle-notes ui [--port ${DEFAULT_UI_PORT}]      Starts the web page at http://127.0.0.1:${DEFAULT_UI_PORT}.
@@ -14,7 +15,8 @@ Commands:
   kindle-notes status                Shows the quantities and the result of the last sync.
 
 The database is ${paths.db}.
-To use a different folder, set KINDLE_NOTES_HOME.`;
+To use a different folder, set KINDLE_NOTES_HOME.
+If the tool is not installed, use "${cliCommand()}" in place of "kindle-notes".`;
 
 const EXIT_SESSION = 2;
 
@@ -26,17 +28,23 @@ async function main(argv: string[]): Promise<number> {
     case 'login': {
       const { interactiveLogin } = await import('./amazon/browser.js');
       await interactiveLogin(log);
-      log('The login is complete. Now run `kindle-notes sync`.');
+      log(`The login is complete. Now run \`${cliCommand()} sync\`.`);
       return 0;
     }
 
     case 'sync': {
       const { values } = parseArgs({
         args: rest,
-        options: { 'no-bookmarks': { type: 'boolean', default: false }, book: { type: 'string' } },
+        options: {
+          'no-bookmarks': { type: 'boolean', default: false },
+          book: { type: 'string' },
+          'no-login': { type: 'boolean', default: false },
+        },
       });
       const { runSync } = await import('./sync/sync.js');
-      const s = await runSync({ bookmarks: !values['no-bookmarks'], onlyAsin: values.book, log });
+      // Open the login window only when a person is at the terminal (not in a scheduled job).
+      const interactive = Boolean(process.stdin.isTTY && process.stdout.isTTY) && !values['no-login'];
+      const s = await runSync({ bookmarks: !values['no-bookmarks'], onlyAsin: values.book, interactiveLogin: interactive, log });
       log(`\nThe sync is complete: ${s.books} book(s), ${s.added} new, ${s.updated} changed, ${s.removed} removed.`);
       for (const w of s.warnings) log(`warning: ${w}`);
       for (const e of s.errors) console.error(`error: ${e}`);
@@ -77,11 +85,11 @@ async function main(argv: string[]): Promise<number> {
     case 'help':
     case '--help':
     case '-h':
-      log(HELP);
+      log(HELP());
       return 0;
 
     default:
-      console.error(`The command is not known: ${command}\n\n${HELP}`);
+      console.error(`The command is not known: ${command}\n\n${HELP()}`);
       return 64;
   }
 }

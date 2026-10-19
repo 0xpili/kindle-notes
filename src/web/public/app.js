@@ -234,7 +234,7 @@ async function init() {
     await route();
   } catch (err) {
     setView(err.status === 503
-      ? empty('There is no data. In a terminal, run ', h('code', {}, 'kindle-notes login'), '. Then run ', h('code', {}, 'kindle-notes sync'), '. Then open this page again.')
+      ? empty('There is no data. In a terminal, run ', h('code', {}, 'kindle-notes sync'), '. Then open this page again.')
       : empty(err.message));
   }
 }

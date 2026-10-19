@@ -1,4 +1,4 @@
-import { openBrowser, firstPage, SessionExpiredError } from '../amazon/browser.js';
+import { openBrowser, firstPage, interactiveLogin, SessionExpiredError } from '../amazon/browser.js';
 import { NotebookClient, getReaderAnnotations } from '../amazon/client.js';
 import { paths } from '../config.js';
 import { openWritable } from '../db/db.js';
@@ -9,6 +9,8 @@ import { mergeBook } from './merge.js';
 export interface SyncOptions {
   bookmarks: boolean;
   onlyAsin?: string;
+  /** If Amazon asks for a new login, open a visible window for it, then continue. */
+  interactiveLogin?: boolean;
   log: (msg: string) => void;
 }
 
@@ -25,17 +27,39 @@ export async function runSync(opts: SyncOptions): Promise<SyncSummary> {
   const db = openWritable(paths.db);
   const runId = startSyncRun(db);
   const summary: SyncSummary = { books: 0, added: 0, updated: 0, removed: 0, errors: [], warnings: [] };
-  const ctx = await openBrowser({ headless: true }).catch((err) => {
-    finishSyncRun(db, runId, { status: 'failed', ...summary, errors: [String(err.message)] });
+  // Amazon asks for the password again when the last login is more than 1 hour old.
+  // In a terminal, open the login window and then continue with the sync.
+  const connect = async () => {
+    const ctx = await openBrowser({ headless: true });
+    const client = new NotebookClient(await firstPage(ctx));
+    try {
+      await client.open();
+      return { ctx, client };
+    } catch (err) {
+      await ctx.close().catch(() => {});
+      throw err;
+    }
+  };
+
+  let session: Awaited<ReturnType<typeof connect>>;
+  try {
+    try {
+      session = await connect();
+    } catch (err) {
+      if (!(err instanceof SessionExpiredError) || !opts.interactiveLogin) throw err;
+      opts.log('Amazon asks for your password again.');
+      await interactiveLogin(opts.log);
+      session = await connect();
+    }
+  } catch (err) {
+    finishSyncRun(db, runId, { status: 'failed', ...summary, errors: [(err as Error).message] });
     db.close();
     throw err;
-  });
+  }
+  const { ctx, client } = session;
 
   try {
-    const notebookPage = await firstPage(ctx);
     const readerPage = opts.bookmarks ? await ctx.newPage() : null;
-    const client = new NotebookClient(notebookPage);
-    await client.open();
 
     let books = await client.getLibrary();
     if (opts.onlyAsin) books = books.filter((b) => b.asin === opts.onlyAsin);

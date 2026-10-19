@@ -3,6 +3,13 @@
 All important changes to this project are in this file.
 The project uses [Semantic Versioning](https://semver.org).
 
+## Unreleased
+
+- `sync`: If Amazon asks for your password, the sync opens Chrome for the login. Then the sync continues.
+  Amazon asks for the password when the last login is more than 1 hour old.
+- `sync --no-login`: The sync does not open Chrome. It stops with exit code 2.
+- The messages show the command that you used, for example `node dist/cli.js`.
+
 ## 0.1.0 - 2026-10-18
 
 The first release.
