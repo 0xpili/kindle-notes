@@ -9,6 +9,7 @@ The project uses [Semantic Versioning](https://semver.org).
   Amazon asks for the password when the last login is more than 1 hour old.
 - `sync --no-login`: The sync does not open Chrome. It stops with exit code 2.
 - The messages show the command that you used, for example `node dist/cli.js`.
+- Install from the Git repository with `npm link`. The project is not on npm.
 
 ## 0.1.0 - 2026-10-18
 

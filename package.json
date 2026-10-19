@@ -1,6 +1,7 @@
 {
   "name": "kindle-notes",
   "version": "0.1.0",
+  "private": true,
   "description": "Copy your Kindle highlights, notes, and bookmarks from your Amazon account to a local database. Read them in a local web page or search them from Claude through MCP.",
   "keywords": [
     "kindle",
@@ -27,13 +28,6 @@
   "bin": {
     "kindle-notes": "dist/cli.js"
   },
-  "files": [
-    "dist",
-    "!dist/**/*.map",
-    "README.md",
-    "LICENSE",
-    "CHANGELOG.md"
-  ],
   "engines": {
     "node": ">=22"
   },
@@ -41,12 +35,7 @@
     "build": "rm -rf dist && tsc -p tsconfig.json && cp -R src/web/public dist/web/ && chmod +x dist/cli.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "kn": "node dist/cli.js",
-    "prepublishOnly": "pnpm typecheck && pnpm test && pnpm build"
-  },
-  "publishConfig": {
-    "access": "public",
-    "provenance": true
+    "kn": "node dist/cli.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1",

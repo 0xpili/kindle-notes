@@ -1,7 +1,6 @@
 # Kindle Notes
 
 [![CI](https://github.com/0xpili/kindle-notes/actions/workflows/ci.yml/badge.svg)](https://github.com/0xpili/kindle-notes/actions/workflows/ci.yml)
-[![npm](https://img.shields.io/npm/v/kindle-notes.svg)](https://www.npmjs.com/package/kindle-notes)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Kindle Notes copies your Kindle highlights, notes, and bookmarks from your Amazon account to a database on your computer.
@@ -17,33 +16,74 @@ Claude and other AI assistants can also search the data through an MCP server.
 
 ## Requirements
 
+- macOS or Linux
 - Node.js 22 or higher
+- pnpm. To install pnpm, run `npm install -g pnpm`.
+- Git
 - Google Chrome
 - An account on amazon.com
 
-## Install
+## Procedure: Install
 
-Install the package from npm:
+1. Clone the repository:
 
-```bash
-npm install -g kindle-notes
-```
+   ```bash
+   git clone https://github.com/0xpili/kindle-notes.git
+   cd kindle-notes
+   ```
 
-To install from the source code, do these steps:
+2. Install the dependencies:
 
-1. Clone the repository.
-2. Run `pnpm install`.
-3. Run `pnpm build`.
-4. In the commands that follow, use `node dist/cli.js` as the command name, not `kindle-notes`.
+   ```bash
+   pnpm install
+   ```
 
-The package uses `better-sqlite3`, which has an install script.
-If npm does not run the install script, run `npm approve-scripts better-sqlite3`. Then install the package again.
+3. Build the tool:
+
+   ```bash
+   pnpm build
+   ```
+
+4. Add the `kindle-notes` command to your computer:
+
+   ```bash
+   npm link
+   ```
+
+5. Make sure that the command works:
+
+   ```bash
+   kindle-notes help
+   ```
+
+If you do not do step 4, use `node dist/cli.js` in place of `kindle-notes` in all commands.
+Run these commands in the `kindle-notes` folder.
 
 If Google Chrome is not on your computer, install the Chromium browser for Playwright:
 
 ```bash
 npx playwright install chromium
 ```
+
+## Procedure: Get a new version
+
+1. Go to the `kindle-notes` folder.
+2. Run these commands:
+
+   ```bash
+   git pull
+   pnpm install
+   pnpm build
+   ```
+
+You do not have to do `npm link` again.
+Your data in `~/.kindle-notes/` does not change.
+
+## Procedure: Remove the tool
+
+1. In the `kindle-notes` folder, run `npm unlink -g kindle-notes`.
+2. Delete the `kindle-notes` folder.
+3. To delete your data and your Amazon session, delete the `~/.kindle-notes/` folder.
 
 ## Procedure: Get your notes
 
@@ -93,7 +133,7 @@ The web page has a light mode and a dark mode.
 
 ## Procedure: Connect the MCP server to Claude
 
-1. Install Kindle Notes. Refer to [Install](#install).
+1. Install Kindle Notes. Refer to [Install](#procedure-install).
 2. Do the procedure in [Get your notes](#procedure-get-your-notes).
 3. Run this command:
 
@@ -102,6 +142,12 @@ The web page has a light mode and a dark mode.
    ```
 
 4. Start a new Claude Code session.
+
+If you did not do `npm link`, use the full path to `dist/cli.js`:
+
+```bash
+claude mcp add kindle-notes -- node /full/path/to/kindle-notes/dist/cli.js mcp
+```
 
 For other MCP clients, use this configuration:
 
