@@ -19,7 +19,9 @@ const KINDS = new Set<AnnotationKind>(['highlight', 'note', 'bookmark']);
 
 const SECURITY_HEADERS = {
   'Content-Security-Policy':
-    "default-src 'self'; img-src 'self' https://m.media-amazon.com https://images-na.ssl-images-amazon.com; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'",
+    "default-src 'self'; img-src 'self' https://m.media-amazon.com https://images-na.ssl-images-amazon.com; style-src 'self'; script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+  'Cross-Origin-Resource-Policy': 'same-origin',
+  'Cross-Origin-Opener-Policy': 'same-origin',
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'no-referrer',
 };
@@ -51,9 +53,16 @@ export function createApp(dbFile = paths.db, port: number) {
     '/api/random': (q, d) => repo.randomHighlight(d, q.get('asin') || undefined),
   };
 
-  return http.createServer((req, res) => {
+  const server = http.createServer((req, res) => {
     // Reject requests for other host names (protects against DNS-rebinding attacks).
     if (!allowedHosts.has(req.headers.host ?? '')) {
+      res.writeHead(403).end('Forbidden');
+      return;
+    }
+    // The data API only answers the page itself, not requests started by other websites
+    // (browsers send Sec-Fetch-Site). Opening the page from a link stays possible.
+    const site = req.headers['sec-fetch-site'];
+    if (req.url?.startsWith('/api/') && site && site !== 'same-origin' && site !== 'none') {
       res.writeHead(403).end('Forbidden');
       return;
     }
@@ -61,15 +70,25 @@ export function createApp(dbFile = paths.db, port: number) {
       res.writeHead(405).end();
       return;
     }
-    const url = new URL(req.url ?? '/', `http://${req.headers.host}`);
+    let url: URL;
+    try {
+      url = new URL(req.url ?? '/', `http://${req.headers.host}`);
+    } catch {
+      res.writeHead(400).end('Bad request');
+      return;
+    }
 
     const handler = api[url.pathname];
     if (handler) {
       try {
         json(res, 200, handler(url.searchParams, getDb()));
       } catch (err) {
-        if (err instanceof NoDatabaseError) json(res, 503, { error: err.message });
-        else json(res, 500, { error: (err as Error).message });
+        if (err instanceof NoDatabaseError) {
+          json(res, 503, { error: 'There is no data. Run `kindle-notes sync`.' });
+        } else {
+          console.error(err);
+          json(res, 500, { error: 'Internal error. Refer to the terminal for details.' });
+        }
       }
       return;
     }
@@ -83,6 +102,9 @@ export function createApp(dbFile = paths.db, port: number) {
     }
     res.writeHead(404).end('Not found');
   });
+  // A malformed request must not stop the server.
+  server.on('clientError', (_err, socket) => socket.destroy());
+  return server;
 }
 
 export function runWebServer(port: number): Promise<http.Server> {

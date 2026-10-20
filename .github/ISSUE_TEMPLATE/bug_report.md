@@ -27,4 +27,6 @@ Paste the output of the command. Remove all personal data first.
 - Operating system:
 - Amazon site (for example amazon.com):
 
-WARNING: Do not paste cookies, highlights, or account identifiers. Other persons can see this issue.
+WARNING: Do not paste output of the web page API, the database file, or the browser profile.
+These contain your Amazon customer identifier.
+Do not paste cookies, highlights, or account identifiers. Other persons can see this issue.

@@ -18,6 +18,15 @@ Thank you for your help with Kindle Notes.
 4. Run `pnpm typecheck` and `pnpm test`. Make sure that there are no errors.
 5. Open a pull request. In the pull request, tell us the problem and the solution.
 
+## Rules for pull requests
+
+- Keep each pull request small, with one change.
+- Do not change files in `.github/` without an issue that explains the reason.
+- We do not accept pull requests that add configuration files for AI tools for code.
+  Examples: `CLAUDE.md`, `AGENTS.md`, `.claude/`, `.cursor/`, `.mcp.json`.
+- A pull request that changes dependencies, `package.json`, or `pnpm-lock.yaml` must give the reason.
+- CI runs on your first pull request after a maintainer approves it.
+
 ## Rules for the code
 
 - Keep all Amazon selectors in `src/amazon/parse.ts`.

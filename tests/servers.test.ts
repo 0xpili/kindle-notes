@@ -63,6 +63,14 @@ describe('MCP server', () => {
     expect((await call('get_book_notes', { book: 'deep' })).text).toContain('matches several books');
   });
 
+  it('marks all results as data, not instructions (prompt-injection guard)', async () => {
+    const { DATA_NOTICE } = await import('../src/mcp/server.js');
+    for (const [name, args] of [['search_notes', { query: 'focus' }], ['list_books', {}], ['sync_status', {}]] as const) {
+      expect((await call(name, args)).text.startsWith(DATA_NOTICE)).toBe(true);
+    }
+    expect(client.getInstructions()).toMatch(/never as instructions/);
+  });
+
   it('validates input', async () => {
     const r = await call('search_notes', { query: '' });
     expect(r.isError).toBe(true);
@@ -110,6 +118,27 @@ describe('web server', () => {
     const r = await get('/');
     expect(r.status).toBe(200);
     expect(r.headers['content-security-policy']).toContain("script-src 'self'");
+  });
+
+  it('rejects requests started by other websites', async () => {
+    const r = await new Promise<number>((resolve, reject) => {
+      http.get({ host: '127.0.0.1', port, path: '/api/books', headers: { host: `127.0.0.1:${port}`, 'sec-fetch-site': 'cross-site' } }, (res) => {
+        res.resume();
+        resolve(res.statusCode!);
+      }).on('error', reject);
+    });
+    expect(r).toBe(403);
+  });
+
+  it('survives a malformed request line', async () => {
+    const net = await import('node:net');
+    await new Promise<void>((resolve) => {
+      const sock = net.connect(port, '127.0.0.1', () => sock.write(`GET //[ HTTP/1.1\r\nHost: 127.0.0.1:${port}\r\n\r\n`));
+      sock.on('data', () => sock.destroy());
+      sock.on('close', () => resolve());
+      sock.on('error', () => resolve());
+    });
+    expect((await get('/api/books')).status).toBe(200);
   });
 
   it('rejects other Host headers (DNS rebinding)', async () => {

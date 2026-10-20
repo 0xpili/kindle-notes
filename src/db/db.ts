@@ -81,9 +81,14 @@ function configure(db: DB) {
 
 /** Open for writing (sync). Creates the file and runs migrations. */
 export function openWritable(file: string): DB {
-  fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
-  const db = new Database(file);
+  const dir = path.dirname(file);
+  fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+  fs.chmodSync(dir, 0o700);
+  // Create the file with owner-only permissions before SQLite opens it.
+  // SQLite gives the -wal and -shm files the same permissions.
+  if (!fs.existsSync(file)) fs.closeSync(fs.openSync(file, 'a', 0o600));
   fs.chmodSync(file, 0o600);
+  const db = new Database(file);
   db.pragma('journal_mode = WAL');
   configure(db);
   migrate(db);

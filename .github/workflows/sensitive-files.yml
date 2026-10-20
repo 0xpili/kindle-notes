@@ -1,0 +1,34 @@
+name: Sensitive files
+
+# Fails when a pull request from another person changes files that can run code on
+# the maintainer's computer or in CI, or that configure AI coding tools.
+# The maintainer must examine these changes line by line before a merge.
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.event.pull_request.user.login != 'dependabot[bot]' && github.event.pull_request.user.login != github.repository_owner
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Find changes to sensitive files
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          pattern='^(\.github/|\.claude/|\.cursor/|\.vscode/|\.devcontainer/|\.husky/|CLAUDE\.md|AGENTS\.md|GEMINI\.md|\.mcp\.json|\.npmrc|\.pnpmfile\.cjs|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|tsconfig\.json|vitest\.config\.|\.gitattributes)'
+          changed=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" | grep -E "$pattern" || true)
+          if [ -n "$changed" ]; then
+            echo "::error::This pull request changes sensitive files. A maintainer must examine them before a merge:"
+            echo "$changed"
+            exit 1
+          fi
+          echo "No sensitive files changed."

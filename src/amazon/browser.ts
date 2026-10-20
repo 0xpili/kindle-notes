@@ -2,6 +2,7 @@
 // reuse the session cookies stored in that profile. Playwright is imported lazily so the
 // UI and MCP server never load it.
 import fs from 'node:fs';
+import path from 'node:path';
 import type { BrowserContext, Page } from 'playwright';
 import { AMAZON_READ_URL, cliCommand, paths } from '../config.js';
 
@@ -27,7 +28,10 @@ export function isSignInUrl(url: string): boolean {
 
 export async function openBrowser(opts: { headless: boolean }): Promise<BrowserContext> {
   const { chromium } = await import('playwright');
+  // The profile holds the Amazon session cookies: only the owner may read it.
   fs.mkdirSync(paths.browserProfile, { recursive: true, mode: 0o700 });
+  fs.chmodSync(path.dirname(paths.browserProfile), 0o700);
+  fs.chmodSync(paths.browserProfile, 0o700);
   const launch = (channel?: string) =>
     chromium.launchPersistentContext(paths.browserProfile, {
       channel,

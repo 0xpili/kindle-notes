@@ -212,6 +212,7 @@ pnpm build
 ```
 
 Refer to [CONTRIBUTING.md](CONTRIBUTING.md).
+For security, refer to [SECURITY.md](SECURITY.md) and [docs/MAINTAINING.md](docs/MAINTAINING.md).
 
 ## Disclaimer
 
