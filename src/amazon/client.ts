@@ -8,6 +8,11 @@ import { PageFormatError, hasLibrary, parseAnnotationsPage, parseLibrary, parseR
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const MAX_PAGES_PER_BOOK = 100;
 
+/** Amazon gives the library token already URL-encoded. Do not encode it again. */
+export function libraryPageUrl(token: string): string {
+  return `/notebook?library=list&token=${token}`;
+}
+
 interface FetchResult {
   status: number;
   url: string;
@@ -57,7 +62,7 @@ export class NotebookClient {
     let token = nextPageToken;
     for (let i = 0; token && i < 50; i++) {
       // Not verified (test account fits on one page); fail loudly rather than skip books.
-      const more = await this.get(`/notebook?library=list&token=${encodeURIComponent(token)}`);
+      const more = await this.get(libraryPageUrl(token));
       const page = parseLibrary(`<div id="kp-notebook-library">${more.text}</div>`);
       if (page.books.length === 0) {
         throw new PageFormatError('library has more pages but the next page could not be read; please report this');
