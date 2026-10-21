@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { DEFAULT_UI_PORT, cliCommand, paths } from './config.js';
 
@@ -13,6 +14,8 @@ Commands:
   kindle-notes ui [--port ${DEFAULT_UI_PORT}]      Starts the web page at http://127.0.0.1:${DEFAULT_UI_PORT}.
   kindle-notes mcp                   Starts the MCP server (stdio) for Claude.
   kindle-notes status                Shows the quantities and the result of the last sync.
+  kindle-notes export [--out ./kindle-export]
+                                     Writes one Markdown file for each book to the folder.
 
 The database is ${paths.db}.
 To use a different folder, set KINDLE_NOTES_HOME.
@@ -78,6 +81,19 @@ async function main(argv: string[]): Promise<number> {
         log(`Last sync: ${new Date(s.lastSync.startedAt).toLocaleString()} — ${s.lastSync.status}`);
         for (const e of s.lastSync.errors) log(`  error: ${e}`);
       } else log('No sync was done.');
+      return 0;
+    }
+
+    case 'export': {
+      const { values } = parseArgs({ args: rest, options: { out: { type: 'string', default: 'kindle-export' } } });
+      const { openReadOnly } = await import('./db/db.js');
+      const { exportMarkdown } = await import('./export.js');
+      const dir = path.resolve(values.out);
+      const db = openReadOnly(paths.db);
+      const r = exportMarkdown(db, dir);
+      db.close();
+      log(`The export is complete: ${r.books} book(s), ${r.highlights} highlights, ${r.notes} notes, ${r.bookmarks} bookmarks in ${dir}.`);
+      log(`${r.written} file(s) written, ${r.unchanged} not changed, ${r.removed} removed.`);
       return 0;
     }
 
