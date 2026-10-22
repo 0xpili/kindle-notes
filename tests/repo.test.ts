@@ -126,6 +126,20 @@ describe('reads', () => {
     expect(repo.findBooks(db, 'o').length).toBe(2);
   });
 
+  it('reads the Amazon date', () => {
+    expect(repo.parseAmazonDate('Sunday, October 18, 2026')).toBe(Date.UTC(2026, 9, 18));
+    expect(repo.parseAmazonDate('not a date')).toBeNull();
+    expect(repo.parseAmazonDate(null)).toBeNull();
+  });
+
+  it('lists the newest books first, also with no item dates', () => {
+    repo.upsertBook(db, { ...book, lastAnnotated: 'Monday, March 3, 2008' });
+    repo.upsertBook(db, { ...book, asin: 'B2', title: 'New Book', lastAnnotated: 'Tuesday, September 15, 2026' });
+    repo.upsertBook(db, { ...book, asin: 'B3', title: 'Mid Book', lastAnnotated: null });
+    repo.saveBookAnnotations(db, 'B3', [rec('m', 'x', { asin: 'B3', createdAt: Date.UTC(2015, 0, 1) })], all);
+    expect(repo.listBooks(db).map((b) => b.asin)).toEqual(['B2', 'B3', 'B1']);
+  });
+
   it('pages through a book in reading order', () => {
     repo.saveBookAnnotations(db, 'B1', [rec('late', 'z', { position: 900 }), rec('early', 'a', { position: 100 }), rec('mid', 'm', { position: 500 })], all);
     expect(repo.getBookAnnotations(db, 'B1').rows.map((r) => r.id)).toEqual(['early', 'mid', 'late']);
