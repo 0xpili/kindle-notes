@@ -88,6 +88,40 @@ describe('mergeBook dash prefix (seen on real data)', () => {
   });
 });
 
+describe('mergeBook gaps in the reader context (seen on real data)', () => {
+  const hl = (id: string, text: string, position: number): NotebookAnnotation =>
+    ({ id, asin: 'X', kind: 'highlight', text, note: null, color: null, location: 1, page: null, position });
+  const rh = (start: number, context: string, modifiedAt: number) =>
+    ({ type: 'highlight' as const, start, end: start + 10, context, note: null, color: null, modifiedAt });
+
+  it('matches when the reader leaves spaces in place of a word or a footnote number', () => {
+    const nb = [
+      hl('a', 'More recently, a second form of scaling has emerged: inference scaling.52 This involves increasing the compute used to answer each question', 100),
+      hl('b', '(by using more tokens in its response) or by applying explicit algorithms on top of an LLM to explore multiple paths.', 200),
+    ];
+    const rd = [
+      rh(10, 'More recently, a second form of scaling has emerged: inference scaling.   This involves increasing', 7),
+      rh(20, '(by using more        in its response) or by applying explicit algorithms on top of an LLM to', 8),
+    ];
+    const r = mergeBook('X', nb, rd);
+    expect(r.partialCount).toBe(0);
+    expect(r.records.find((x) => x.id === 'a')?.createdAt).toBe(7);
+    expect(r.records.find((x) => x.id === 'b')?.createdAt).toBe(8);
+  });
+
+  it('does not match when the text after a gap is not in the notebook text', () => {
+    const nb = [hl('a', '(by using more tokens in its response) or by applying explicit algorithms.', 100)];
+    const rd = [rh(10, '(by using more        in a different place) and other words', 7)];
+    expect(mergeBook('X', nb, rd).partialCount).toBe(1);
+  });
+
+  it('does not match when the gap would hide a long piece of text', () => {
+    const nb = [hl('a', 'The first part of the sentence, then a very long middle piece of text that is much too long for a gap, and the end.', 100)];
+    const rd = [rh(10, 'The first part of the sentence,    and the end.', 7)];
+    expect(mergeBook('X', nb, rd).partialCount).toBe(1);
+  });
+});
+
 describe('estimatePosition', () => {
   it('interpolates between matched pairs and extrapolates at the ends', () => {
     const pairs: Array<[number, number]> = [[100, 1000], [200, 3000]];

@@ -25,7 +25,34 @@ function contextMatches(context: string, fullText: string): boolean {
   // appearing early in the context.
   const head = t.slice(0, Math.min(t.length, 30));
   const at = head.length >= 12 ? c.indexOf(head) : -1;
-  return at > 0 && at <= 30;
+  if (at > 0 && at <= 30) return true;
+  return gapMatches(context, fullText);
+}
+
+/** Two or more spaces in a row: the reader puts these where it drops an inline element. */
+const GAP = /\s{2,}/;
+/** Longest text that one gap can hide (a word in a special font, a footnote number). */
+const MAX_GAP = 40;
+
+/**
+ * The reader drops some inline elements from its context and leaves spaces in their place
+ * ("by using more        in its response" vs notebook "by using more tokens in its response").
+ * Match when the pieces between the gaps appear in the notebook text in order, the first
+ * piece at the start and each gap short.
+ */
+function gapMatches(context: string, fullText: string): boolean {
+  if (!GAP.test(context.trim())) return false;
+  const pieces = context.split(GAP).map(normalize).filter(Boolean);
+  if (pieces.length < 2 || pieces.join('').length < 20) return false;
+  const t = normalize(fullText);
+  if (!t.startsWith(pieces[0]!)) return false;
+  let at = pieces[0]!.length;
+  for (const piece of pieces.slice(1)) {
+    const i = t.indexOf(piece, at);
+    if (i < 0 || i - at > MAX_GAP) return false;
+    at = i + piece.length;
+  }
+  return true;
 }
 
 /**
