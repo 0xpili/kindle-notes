@@ -48,13 +48,41 @@ function plainText(a) {
   return parts.join('\n');
 }
 
+// Tooltip text is in Simplified Technical English (ASD-STE100).
+const PARTIAL_TIP = [
+  'Amazon gives only part of the text of this highlight.',
+  'The publisher of the book sets a limit on the text that Amazon exports.',
+  'To read all of the text, open the book in the Kindle app.',
+].join(' ');
+
+let tipCount = 0;
+/** The "partial" label. The tooltip shows on mouse hover and on keyboard focus. */
+function partialBadge() {
+  const id = `tip-${++tipCount}`;
+  return h('span', { class: 'badge warn has-tip', tabindex: '0', 'aria-describedby': id },
+    'partial',
+    h('span', { class: 'tip', role: 'tooltip', id }, PARTIAL_TIP),
+  );
+}
+
 function card(a, { showBook = false, terms = [] } = {}) {
   const copyBtn = h('button', {
     class: 'copy', type: 'button', title: 'Copy',
-    onclick: async (e) => {
-      await navigator.clipboard.writeText(plainText(a));
-      e.currentTarget.textContent = 'Copied';
-      setTimeout(() => (copyBtn.textContent = 'Copy'), 1200);
+    onclick: async () => {
+      // Use copyBtn, not e.currentTarget: the event's currentTarget is null after the await.
+      let ok = true;
+      try {
+        await navigator.clipboard.writeText(plainText(a));
+      } catch {
+        ok = false;
+      }
+      copyBtn.textContent = ok ? 'Copied' : 'Copy failed';
+      copyBtn.classList.toggle('copied', ok);
+      clearTimeout(copyBtn._reset);
+      copyBtn._reset = setTimeout(() => {
+        copyBtn.textContent = 'Copy';
+        copyBtn.classList.remove('copied');
+      }, 1500);
     },
   }, 'Copy');
 
@@ -71,7 +99,7 @@ function card(a, { showBook = false, terms = [] } = {}) {
       a.kind !== 'highlight' ? h('span', { class: 'badge' }, a.kind) : null,
       where(a) ? h('span', {}, where(a)) : null,
       fmtDate(a.createdAt) ? h('span', {}, fmtDate(a.createdAt)) : null,
-      a.isPartial ? h('span', { class: 'badge warn', title: 'Amazon only shares part of this highlight (publisher export limit)' }, 'partial') : null,
+      a.isPartial ? partialBadge() : null,
       a.deleted ? h('span', { class: 'badge' }, 'deleted on Amazon') : null,
       copyBtn,
     ),
