@@ -148,18 +148,40 @@ const ROW_COLUMNS = `
 type RawRow = Omit<AnnotationRow, 'isPartial' | 'deleted'> & { isPartial: number; deleted: number };
 const toRow = (r: RawRow): AnnotationRow => ({ ...r, isPartial: !!r.isPartial, deleted: !!r.deleted });
 
+const MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+
+/** Read a date as Amazon shows it, e.g. "Sunday, October 18, 2026". Gives UTC midnight (ms), or null. */
+export function parseAmazonDate(text: string | null): number | null {
+  const m = text?.match(/([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})\s*$/);
+  if (!m) return null;
+  const month = MONTHS.indexOf(m[1]!.toLowerCase());
+  return month < 0 ? null : Date.UTC(Number(m[3]), month, Number(m[2]));
+}
+
+/**
+ * Newest books first. The date is the newest item date, or the "last annotated" date from Amazon.
+ * A sync with --no-bookmarks gets no item dates, so the Amazon date is often the only one.
+ * If there is no date, the tool uses the time that it first saw an item.
+ */
 export function listBooks(db: DB): BookSummary[] {
-  return db
+  const rows = db
     .prepare(
-      `SELECT b.asin, b.title, b.author, b.cover_url AS coverUrl,
+      `SELECT b.asin, b.title, b.author, b.cover_url AS coverUrl, b.last_annotated AS lastAnnotated,
          COALESCE(SUM(a.kind = 'highlight'), 0) AS highlights,
          COALESCE(SUM(a.kind = 'note' OR (a.kind = 'highlight' AND a.note IS NOT NULL)), 0) AS notes,
          COALESCE(SUM(a.kind = 'bookmark'), 0) AS bookmarks,
-         MAX(COALESCE(a.created_at, a.first_seen_at)) AS lastActivity
+         MAX(a.created_at) AS newestItem, MAX(a.first_seen_at) AS firstSeen
        FROM books b LEFT JOIN annotations a ON a.asin = b.asin AND a.deleted_at IS NULL
-       GROUP BY b.asin ORDER BY lastActivity DESC, b.title`,
+       GROUP BY b.asin`,
     )
-    .all() as BookSummary[];
+    .all() as Array<Omit<BookSummary, 'lastActivity'> & { lastAnnotated: string | null; newestItem: number | null; firstSeen: number | null }>;
+  return rows
+    .map(({ lastAnnotated, newestItem, firstSeen, ...b }) => {
+      const amazon = parseAmazonDate(lastAnnotated);
+      const known = [newestItem, amazon].filter((n): n is number => n != null);
+      return { ...b, lastActivity: known.length ? Math.max(...known) : firstSeen };
+    })
+    .sort((x, y) => (y.lastActivity ?? -Infinity) - (x.lastActivity ?? -Infinity) || x.title.localeCompare(y.title) || (x.asin < y.asin ? -1 : 1));
 }
 
 /** Resolve a book by exact ASIN or by a case-insensitive title/author fragment. */

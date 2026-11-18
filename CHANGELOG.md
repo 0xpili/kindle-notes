@@ -5,6 +5,7 @@ The project uses [Semantic Versioning](https://semver.org).
 
 ## Unreleased
 
+- `export`: Writes one Markdown file for each book. The same database always gives the same files.
 - `sync`: If Amazon asks for your password, the sync opens Chrome for the login. Then the sync continues.
   Amazon asks for the password when the last login is more than 1 hour old.
 - `sync --no-login`: The sync does not open Chrome. It stops with exit code 2.

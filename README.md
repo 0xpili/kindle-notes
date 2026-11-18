@@ -117,6 +117,7 @@ Run `kindle-notes login` or `kindle-notes sync` in a terminal, then the next sch
 | `kindle-notes ui [--port 4477]` | Starts the web page at http://127.0.0.1:4477. |
 | `kindle-notes mcp` | Starts the MCP server (stdio). |
 | `kindle-notes status` | Shows the quantity of items and the result of the last sync. |
+| `kindle-notes export [--out ./kindle-export]` | Writes one Markdown file for each book. Refer to [Export to Markdown](#export-to-markdown). |
 
 ## The web page
 
@@ -130,6 +131,19 @@ The web page has these parts:
 - A "Copy" button on each item.
 
 The web page has a light mode and a dark mode.
+
+## Export to Markdown
+
+`kindle-notes export` writes one Markdown file for each book to the folder `./kindle-export`.
+To use a different folder, use `--out <folder>`.
+
+- The file name is `<author> - <title>.md`. If two books have the same name, the file name also has the ASIN.
+- Each file has the title, the author, the ASIN, and all items of the book in the sequence of the book.
+  Each item has the page or location, the color, the date (if the database has it), and the note.
+- The same database always gives the same files. Thus you can keep the folder in Git.
+- The export writes the list of its files to `.kindle-notes-export` in the folder.
+  When a book is not in the database, the export deletes the file of that book.
+  The export does not delete other files.
 
 ## Procedure: Connect the MCP server to Claude
 
